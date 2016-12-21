@@ -41,7 +41,7 @@ def main():
         data = ds[ds.Name == name]
         c = scalarMap.to_rgba(10-i)
         ah, = plt.plot(data['time'], data['power'], label=name, color=c)
-        plt.plot_date(data['time'], data['power'], color=c)
+        plt.plot_date(data['time'], data['power'], '.',color=c)
         handles += [ah]
 
     fig.autofmt_xdate()
