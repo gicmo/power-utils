@@ -36,16 +36,19 @@ def main():
 
     fig, ax = plt.subplots()
     ds.sort_values('time', inplace=True)
+    handles = []
     for i, name in enumerate(avg[:10].Name):
         data = ds[ds.Name == name]
         c = scalarMap.to_rgba(10-i)
-        plt.plot(data['time'], data['power'], label=name, color=c)
-        plt.plot_date(data['time'], data['power'], label=name, color=c)
+        ah, = plt.plot(data['time'], data['power'], label=name, color=c)
+        plt.plot_date(data['time'], data['power'], color=c)
+        handles += [ah]
 
+    fig.autofmt_xdate()
     plt.title(args.data)
     plt.xlabel("time")
     plt.ylabel("power [W]")
-    plt.legend()
+    plt.legend(handles=handles)
     plt.show()
 
 if __name__ == '__main__':
