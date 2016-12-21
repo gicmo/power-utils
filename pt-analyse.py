@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
 import argparse
 import pandas as pd
 import os
@@ -136,32 +133,8 @@ def main():
             fl = list(filter(lambda x: s[0] <= parse_date_timestamp(x) <= s[1], fl))
 
     ds = load_dataset(fl, args.dataset)
-    print(ds)
-    g = ds.groupby("Name")
-    avg = g['power'].agg({"sum": np.nansum, "avg": my_mean})
-    avg = avg.reset_index()
-    avg.sort_values("sum", inplace=True, ascending=False)
-    print(avg[:10])
-    culprits = avg[:10]
-
-    # plotting of the data
-    jet = cm = plt.get_cmap('jet')
-    cNorm  = colors.Normalize(vmin=0, vmax=10)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-
-    fig, ax = plt.subplots()
-    ds.sort_values('time', inplace=True)
-    for i, name in enumerate(avg[:10].Name):
-        data = ds[ds.Name == name]
-        c = scalarMap.to_rgba(10-i)
-        plt.plot(data['time'], data['power'], label=name, color=c)
-        plt.plot_date(data['time'], data['power'], label=name, color=c)
-
-    plt.title(args.prefix + " " + args.dataset)
-    plt.xlabel("time")
-    plt.ylabel("power [W]")
-    plt.legend()
-    plt.show()
+    outname = "%s-%s.csv" % (args.prefix, args.dataset)
+    ds.to_csv(outname)
 
 if __name__ == '__main__':
     main()
