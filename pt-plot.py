@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import argparse
+import os
 
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+
 
 import numpy as np
 import pandas as pd
@@ -21,6 +23,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("data")
     parser.add_argument('--style', nargs='*', type=str, default=['ggplot'])
+    parser.add_argument('--save', action='store_true', default=False)
     args = parser.parse_args()
 
     style_check = [s not in plt.style.available for s in args.style]
@@ -60,7 +63,14 @@ def main():
     plt.xlabel("time")
     plt.ylabel("power [W]")
     plt.legend(handles=handles)
-    plt.show()
+
+    if args.save:
+        name, ext = os.path.splitext(os.path.basename(args.data))
+        outname = "%s.pdf" % name
+        fig.set_size_inches(35, 15)
+        fig.savefig(outname, papertype='a4', bbox_inches='tight', dpi=300)
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
