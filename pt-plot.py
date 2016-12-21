@@ -18,7 +18,16 @@ def my_mean(x):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("data")
+    parser.add_argument('--style', nargs='*', type=str, default=['ggplot'])
     args = parser.parse_args()
+
+    style_check = [s not in plt.style.available for s in args.style]
+    if any(style_check):
+        print("[W] %s style not available." % args.style)
+        print(" Known styles:\n\t%s" % "\n\t".join(plt.style.available))
+    else:
+        plt.style.use(args.style)
+
 
     ds = pd.read_csv(args.data, parse_dates=['time'])
 
