@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import argparse
+
+import matplotlib.cm as cmx
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
 import pandas as pd
-import argparse
 
 
 def my_mean(x):
@@ -28,7 +29,6 @@ def main():
     else:
         plt.style.use(args.style)
 
-
     ds = pd.read_csv(args.data, parse_dates=['time'])
 
     g = ds.groupby("Name")
@@ -39,18 +39,18 @@ def main():
     culprits = avg[:10]
 
     # plotting of the data
-    jet = cm = plt.get_cmap('jet')
-    cNorm  = colors.Normalize(vmin=0, vmax=10)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
+    cm = plt.get_cmap('jet')
+    cNorm = colors.Normalize(vmin=0, vmax=10)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 
     fig, ax = plt.subplots()
     ds.sort_values('time', inplace=True)
     handles = []
-    for i, name in enumerate(avg[:10].Name):
+    for i, name in enumerate(culprits.Name):
         data = ds[ds.Name == name]
-        c = scalarMap.to_rgba(10-i)
+        c = scalarMap.to_rgba(len(culprits)-i)
         ah, = plt.plot(data['time'], data['power'], label=name, color=c)
-        plt.plot_date(data['time'], data['power'], '.',color=c)
+        plt.plot_date(data['time'], data['power'], '.', color=c)
         handles += [ah]
 
     fig.autofmt_xdate()
@@ -59,6 +59,7 @@ def main():
     plt.ylabel("power [W]")
     plt.legend(handles=handles)
     plt.show()
+
 
 if __name__ == '__main__':
     main()
