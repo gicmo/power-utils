@@ -59,19 +59,20 @@ def load_dataset(files, name):
     if name not in known_datasets:
         raise ValueError("Unknown dataset")
     ds = known_datasets[name]
-
+    name_col = ds['name']
     combined = []
     for f in files:
         x = parse_single(f)
         df = get_section(x, ds["section"])
         ts = parse_date(f)
         df['time'] = ts
+        df.drop(df.index[pd.isnull(df[name_col])], inplace=True)
         if 'power' in ds:
             c = ds['power']
             df['power'] = np.array(list(map(lambda x: to_watt(x), df[c])))
         combined.append(df)
     df = pd.concat(combined, ignore_index='True')
-    df.rename(columns={ds['name']: "Name"}, inplace=True)
+    df.rename(columns={name_col: "Name"}, inplace=True)
     return df
 
 
