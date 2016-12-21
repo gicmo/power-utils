@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import numpy as np
 import argparse
-import pandas as pd
 import os
 from io import StringIO
+
+import numpy as np
+import pandas as pd
 
 from pint import UnitRegistry
 ureg = UnitRegistry()
@@ -19,6 +20,7 @@ known_datasets = {"process":
                    "power": "PW Estimate",
                    "name": "Device Name"}}
 
+
 def parse_single(path):
     fd = open(path)
     data = fd.read()
@@ -32,17 +34,21 @@ def parse_single(path):
 #        data = pd.read_csv(StringIO(body.strip()), delimiter=';')
     return sections
 
+
 def get_section(data, name):
     body = data[name]
     data = pd.read_csv(StringIO(body.strip()), delimiter=';')
     return data
 
+
 def list_files(path, prefix):
     import glob
     return list(map(os.path.abspath, glob.glob(os.path.join(path, prefix) + "*")))
 
+
 def software_process_one(df):
     return df
+
 
 def to_watt(x):
     if not isinstance(x, str):
@@ -51,6 +57,7 @@ def to_watt(x):
     if x == "nan" or x == "":
         return np.nan
     return Q_(x).to("watt").magnitude
+
 
 def load_dataset(files, name):
     if name not in known_datasets:
@@ -84,11 +91,12 @@ def parse_date_timestamp(path):
 def find_periods(filelist, threashold=20):
     x = np.array(sorted(map(parse_date_timestamp, filelist)))
     d = np.diff(x)
-    k = np.nonzero(d > threashold)[0] # first dim
+    k = np.nonzero(d > threashold)[0]  # first dim
     s = np.hstack([[0], k+1])
-    e = np.hstack([k, [len(d)]]) # len(d) == len(k) - 1
+    e = np.hstack([k, [len(d)]])  # len(d) == len(k) - 1
     r = [(x[i], x[j]) for i, j in zip(s, e)]
     return r
+
 
 def ask_user_for_period(periods):
     from datetime import datetime
@@ -111,11 +119,13 @@ def ask_user_for_period(periods):
         elif got == '*':
             return None
 
+
 def my_mean(x):
     x = np.array(list(filter(lambda x: not np.isnan(x), x)))
     if len(x) == 0:
         return np.nan
     return np.mean(x)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -135,6 +145,7 @@ def main():
         ds = load_dataset(fl, kd)
         outname = "%s-%s.csv" % (args.prefix, kd)
         ds.to_csv(outname)
+
 
 if __name__ == '__main__':
     main()
