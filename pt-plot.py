@@ -3,6 +3,7 @@ import argparse
 
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -46,6 +47,7 @@ def main():
     fig, ax = plt.subplots()
     ds.sort_values('time', inplace=True)
     handles = []
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     for i, name in enumerate(culprits.Name):
         data = ds[ds.Name == name]
         c = scalarMap.to_rgba(len(culprits)-i)
