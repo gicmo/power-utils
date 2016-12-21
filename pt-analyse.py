@@ -121,7 +121,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input")
     parser.add_argument("prefix")
-    parser.add_argument("dataset", choices=[k for k in known_datasets.keys()])
     args = parser.parse_args()
 
     fl = list_files(args.input, args.prefix)
@@ -132,9 +131,10 @@ def main():
             s = periods[c]
             fl = list(filter(lambda x: s[0] <= parse_date_timestamp(x) <= s[1], fl))
 
-    ds = load_dataset(fl, args.dataset)
-    outname = "%s-%s.csv" % (args.prefix, args.dataset)
-    ds.to_csv(outname)
+    for kd in known_datasets.keys():
+        ds = load_dataset(fl, kd)
+        outname = "%s-%s.csv" % (args.prefix, kd)
+        ds.to_csv(outname)
 
 if __name__ == '__main__':
     main()
