@@ -134,6 +134,11 @@ def main():
     args = parser.parse_args()
 
     fl = list_files(args.input, args.prefix)
+
+    if len(fl) == 0:
+        print("No files found!", file=sys.stderr)
+        sys.exit(1)
+
     periods = find_periods(fl)
     if len(periods) > 1:
         c = ask_user_for_period(periods)
