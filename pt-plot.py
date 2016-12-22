@@ -5,8 +5,8 @@ import os
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import matplotlib.dates as mdates
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-
 
 import numpy as np
 import pandas as pd
@@ -47,7 +47,10 @@ def main():
     cNorm = colors.Normalize(vmin=0, vmax=10)
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    gs = gridspec.GridSpec(1, 2, width_ratios=[11, 1])
+
+    ax = plt.subplot(gs[0])
     ds.sort_values('time', inplace=True)
     handles = []
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
@@ -63,6 +66,14 @@ def main():
     plt.xlabel("time")
     plt.ylabel("power [W]")
     plt.legend(handles=handles)
+
+    ax = plt.subplot(gs[1])
+    bottom = 0
+    for i, name in enumerate(culprits.Name):
+        data = float(culprits[culprits.Name == name]['sum'])
+        c = scalarMap.to_rgba(len(culprits)-i)
+        ax.bar(5, data, 5, color=c, bottom=bottom)
+        bottom += data
 
     if args.save:
         name, ext = os.path.splitext(os.path.basename(args.data))
