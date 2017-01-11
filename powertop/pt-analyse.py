@@ -2,6 +2,8 @@
 
 import argparse
 import os
+import sys
+import codecs
 from io import StringIO
 
 import numpy as np
@@ -11,18 +13,10 @@ from pint import UnitRegistry
 ureg = UnitRegistry()
 Q_ = ureg.Quantity
 
-known_datasets = {"process":
-                  {"section": "Overview of Software Power Consumers",
-                   "power": "PW Estimate",
-                   "name": "Description"},
-                  "device":
-                  {"section": "Device Power Report",
-                   "power": "PW Estimate",
-                   "name": "Device Name"}}
-
 
 def parse_single(path):
-    fd = open(path)
+    print("Processing %s" % path)
+    fd = codecs.open(path, 'r', encoding='utf-8', errors='ignore')
     data = fd.read()
     fd.close()
     para = list(filter(len, data.split("_"*68 + "\n")))[1:]
@@ -46,10 +40,6 @@ def list_files(path, prefix):
     return list(map(os.path.abspath, glob.glob(os.path.join(path, prefix) + "*")))
 
 
-def software_process_one(df):
-    return df
-
-
 def to_watt(x):
     if not isinstance(x, str):
         return x
@@ -57,6 +47,23 @@ def to_watt(x):
     if x == "nan" or x == "":
         return np.nan
     return Q_(x).to("watt").magnitude
+
+
+def software_process_one(df):
+    idx = df.index[df['Usage'].str.startswith("The battery reports a discharge rate of:") == True]
+    row = df[idx]
+    return df
+
+
+known_datasets = {"process":
+                  {"section": "Overview of Software Power Consumers",
+                   "power": "PW Estimate",
+                   "name": "Description",
+                   "process": software_process_one},
+                  "device":
+                  {"section": "Device Power Report",
+                   "power": "PW Estimate",
+                   "name": "Device Name"}}
 
 
 def load_dataset(files, name):
@@ -70,6 +77,8 @@ def load_dataset(files, name):
         df = get_section(x, ds["section"])
         ts = parse_date(f)
         df['time'] = ts
+        # if 'process' in ds:
+        #    df = ds['process'](df)
         df.drop(df.index[pd.isnull(df[name_col])], inplace=True)
         if 'power' in ds:
             c = ds['power']
