@@ -31,6 +31,8 @@ struct _PtBattery {
   guint64     voltage_now;
   guint64     charge_now;
 
+  float       capacity;
+
   gint64      timestamp;
 };
 
@@ -67,10 +69,32 @@ static gboolean file_read_uint64 (GFile *base,
   return TRUE;
 }
 
+static gboolean file_read_float (GFile *base,
+                                 const char *name,
+                                 float *out,
+                                 GError **error) {
+  char *data = NULL, *endptr;
+  double res;
+  g_autoptr(GFile) fp = g_file_get_child(base, name);
+
+  if (!g_file_load_contents(fp, NULL, &data, NULL, NULL, error)) {
+    return FALSE;
+  }
+
+  res = g_ascii_strtod(data, &endptr);
+  if (endptr == data) {
+    return FALSE;
+  }
+
+  *out = (float) res;
+  return TRUE;
+}
+
 static gboolean pt_battery_refresh_data (PtBattery *bat, GError **error) {
   guint64 energy_now;
   gboolean ok;
   time_t now;
+  float capacity;
   BatteryUnit unit = UNIT_ENERGY;
 
   ok = file_read_uint64(bat->path, "energy_now", &energy_now, error);
@@ -95,9 +119,15 @@ static gboolean pt_battery_refresh_data (PtBattery *bat, GError **error) {
     return FALSE;
   }
 
+  ok = file_read_float(bat->path, "capacity", &capacity, NULL);
+  if (!ok) {
+    capacity = -1;
+  }
+
   bat->timestamp = (gint64) now;
   bat->energy_now = energy_now;
   bat->unit = unit;
+  bat->capacity = capacity;
   return ok;
 }
 
@@ -238,6 +268,29 @@ total_energy_now (GPtrArray *bats,
   return TRUE;
 }
 
+// Assume data has been refreshed
+static gboolean
+total_capacity_now (GPtrArray *bats,
+                    float *capacity,
+                    GError **error)
+{
+  int i;
+  int count = 0;
+  double total = 0.0;
+
+  for (i = 0; i < bats->len; i++) {
+    PtBattery *b = (PtBattery *) g_ptr_array_index (bats, i);
+
+    if (b->capacity > -1.0f) {
+      total += b->capacity;
+      count++;
+    }
+  }
+
+  *capacity = total / count;
+  return count > 0;
+}
+
 static GFileOutputStream *
 open_data_file(GError **error) {
   gboolean ok;
@@ -268,7 +321,7 @@ open_data_file(GError **error) {
   }
 
   if (g_file_info_get_size(info) == 0) {
-    static const char *data = "action,timestamp,ac,energy_total\n";
+    static const char *data = "action,timestamp,ac,energy_total,capacity_total\n";
     ok = g_output_stream_write_all(G_OUTPUT_STREAM(out),
                                    data, strlen(data), NULL, NULL, error);
     if (!ok) {
@@ -301,6 +354,7 @@ int main (int argc, char **argv) {
   g_autoptr(GPtrArray) bats = NULL;
   gboolean acon, ok;
   guint64 energy;
+  float capacity = -1.0f;
   gint64 timestamp;
   const char *action;
   g_autoptr(GFileOutputStream) out = NULL;
@@ -335,6 +389,9 @@ int main (int argc, char **argv) {
     g_fprintf(stderr, "Could not get total energy: %s\n", error->message);
     return -1;
   }
+  //ignore errors for capacity
+  // will result in it being -1.0f
+  total_capacity_now(bats, &capacity, NULL);
 
   out = open_data_file(&error);
   if (!out) {
@@ -348,8 +405,9 @@ int main (int argc, char **argv) {
   }
 
   ok = g_output_stream_printf(G_OUTPUT_STREAM(out), NULL, NULL, NULL,
-                              "%s,%ld,%d,%lu\n",
-                              action, timestamp, acon ? 1 : 0, energy);
+                              "%s,%ld,%d,%lu,%.2f\n",
+                              action, timestamp, acon ? 1 : 0,
+                              energy, capacity);
   if (!ok) {
     return -1;
   }
