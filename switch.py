@@ -10,6 +10,22 @@ app = Flask(__name__)
 
 GPIO.setwarnings(False)
 
+CODE = {'A': '.-',     'B': '-...',   'C': '-.-.',
+        'D': '-..',    'E': '.',      'F': '..-.',
+        'G': '--.',    'H': '....',   'I': '..',
+        'J': '.---',   'K': '-.-',    'L': '.-..',
+        'M': '--',     'N': '-.',     'O': '---',
+        'P': '.--.',   'Q': '--.-',   'R': '.-.',
+        'S': '...',    'T': '-',      'U': '..-',
+        'V': '...-',   'W': '.--',    'X': '-..-',
+        'Y': '-.--',   'Z': '--..',
+
+        '0': '-----',  '1': '.----',  '2': '..---',
+        '3': '...--',  '4': '....-',  '5': '.....',
+        '6': '-....',  '7': '--...',  '8': '---..',
+        '9': '----.'
+        }
+
 
 class RemoteSwitch(object):
         """
@@ -77,8 +93,39 @@ device = RemoteSwitch(device=int(1),
                       pin=17)
 
 
+def do_morse(morse, dev):
+        def on(t):
+                device.toggle(GPIO.HIGH, device=dev)
+                time.sleep(t)
+
+        def off(t):
+                device.toggle(GPIO.LOW, device=dev)
+                time.sleep(t)
+
+        timing = {'-': 2,
+                  '': 1}
+
+        nap = 1
+        for ch in morse.upper():
+                off(nap)
+                if ch == ' ':
+                        nap = 1
+                        break
+                elif ch not in CODE:
+                        break
+
+                times = [timing[c] for c in CODE[ch]]
+                for t in times:
+                        on(t)
+                        off(.500)
+
+
 @app.route("/switch/<dev>")
 def switch(dev="1"):
+        morse = request.args.get('morse', None)
+        if morse is not None:
+                do_morse(morse, int(dev))
+
         power = request.args.get('power', '')
         if power == 'on':
                 device.toggle(GPIO.HIGH, device=int(dev))
